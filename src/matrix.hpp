@@ -1,5 +1,4 @@
 #pragma once
-#include "matrix.hpp"
 
 template <typename T>
 class linalg::Matrix {
@@ -137,10 +136,7 @@ public:
                 }
             }
             pivot++;
-
-            if (GLOBAL_FORMATTING.verbose) {
-                *GLOBAL_FORMATTING.out << res;
-            }
+            GLOBAL_FORMATTING << res;
         }
         return res;
     }
@@ -181,10 +177,7 @@ public:
     Matrix inverse() const {
         assert(determinant() != 0);
         Matrix res(row, column), aug_matrix = augment(make_identity(row));
-
-        if (GLOBAL_FORMATTING.verbose) {
-            *GLOBAL_FORMATTING.out << aug_matrix;
-        }
+        GLOBAL_FORMATTING << aug_matrix;
         aug_matrix = aug_matrix.echelon_form();
 
         for (int i = row - 1; i >= 0; i--) {
@@ -201,9 +194,7 @@ public:
                     aug_matrix[k, j] -= factor * aug_matrix[i, j];
                 }
             }
-            if (GLOBAL_FORMATTING.verbose) {
-                *GLOBAL_FORMATTING.out << aug_matrix;
-            }
+            GLOBAL_FORMATTING << aug_matrix;
         }
         for (uint32_t i = 0; i < row; i++) {
             for (uint32_t j = 0; j < row; j++) {

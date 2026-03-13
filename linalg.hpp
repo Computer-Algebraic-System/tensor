@@ -3,10 +3,7 @@
 #include "algebra/algebra.hpp"
 
 namespace linalg {
-    inline struct FormatSettings {
-        bool verbose = false;
-        std::ostream* out = &std::cout;
-    } GLOBAL_FORMATTING;
+    inline algebra::detail::FormatSettings GLOBAL_FORMATTING;
 
     template <typename>
     class Matrix;

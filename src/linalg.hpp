@@ -9,6 +9,8 @@ inline std::map<algebra::Variable, algebra::Fraction> linalg::solve_linear_syste
 
     for (int i = 0; i < size; i++) {
         res.emplace(X[i, 0], values[i]);
+        GLOBAL_FORMATTING << X[i, 0] << '=' << values[i] << ' ';
     }
+    GLOBAL_FORMATTING << std::endl;
     return res;
 }
