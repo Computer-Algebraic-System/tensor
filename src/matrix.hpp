@@ -4,6 +4,7 @@ template <typename T>
 class linalg::Matrix {
 public:
     using value_type = T;
+    enum class Type { NORMAL, AUGMENTED } type = Type::NORMAL;
     uint32_t row, column;
     std::vector<std::vector<T>> matrix;
 
@@ -95,11 +96,13 @@ public:
                 res[i, column + j] = mat[i, j];
             }
         }
+        res.type = Type::AUGMENTED;
         return res;
     }
 
     T determinant() const {
         assert(row == column);
+        GLOBAL_FORMATTING << "Determinant:" << std::endl;
         Matrix mat = echelon_form();
         T res = 1;
 
@@ -113,6 +116,7 @@ public:
     Matrix echelon_form() const {
         Matrix res = *this;
         uint32_t pivot = 0;
+        GLOBAL_FORMATTING << "Echelon Form:" << std::endl;
 
         for (uint32_t cnt = 0; cnt < column && pivot < row; cnt++) {
             uint32_t pivot_row = pivot;
@@ -136,12 +140,13 @@ public:
                 }
             }
             pivot++;
-            GLOBAL_FORMATTING << res;
+            GLOBAL_FORMATTING << res << std::endl;
         }
         return res;
     }
 
     std::vector<T> gauss_elimination() const {
+        GLOBAL_FORMATTING << "Gauss Elimination:" << std::endl;
         Matrix res = echelon_form();
         std::vector<T> solution(row);
 
@@ -156,9 +161,9 @@ public:
             }
             if (flag) {
                 if (res[i, column - 1] == 0) {
-                    GLOBAL_FORMATTING << "Infinitely many solutions";
+                    GLOBAL_FORMATTING << "Infinitely many solutions" << std::endl;
                 } else {
-                    GLOBAL_FORMATTING << "No solution";
+                    GLOBAL_FORMATTING << "No solution" << std::endl;
                 }
                 return {};
             }
@@ -176,6 +181,7 @@ public:
 
     Matrix inverse() const {
         assert(determinant() != 0);
+        GLOBAL_FORMATTING << "Inverse:" << std::endl;
         Matrix res(row, column), aug_matrix = augment(make_identity(row));
         GLOBAL_FORMATTING << aug_matrix;
         aug_matrix = aug_matrix.echelon_form();
@@ -366,6 +372,43 @@ public:
             }
         }
         return {A, Matrix<algebra::Variable>(std::vector(variables.begin(), variables.end()), variables.size(), 1), B};
+    }
+
+    std::string to_latex() const {
+        std::string res;
+
+        switch (type) {
+        case Type::NORMAL:
+            res.append("\\begin{bmatrix}\n");
+            break;
+
+        case Type::AUGMENTED:
+            res.append("\\left[\n\\begin{array}{").append(column - 1, 'c').append("|c}\n");
+        }
+
+        for (int i = 0; i < row; i++) {
+            for (int j = 0; j < column; j++) {
+                if constexpr (requires(const T& obj) { obj.to_latex(); }) {
+                    res.append(matrix[i][j].to_latex());
+                } else {
+                    res.append(std::to_string(matrix[i][j]));
+                }
+                if (j != column - 1) {
+                    res.append(" & ");
+                } else {
+                    res.append("\\\\\n");
+                }
+            }
+        }
+        switch (type) {
+        case Type::NORMAL:
+            res.append("\\end{bmatrix}\n");
+            break;
+
+        case Type::AUGMENTED:
+            res.append("\\end{array}\n\\right]\n");
+        }
+        return res;
     }
 };
 

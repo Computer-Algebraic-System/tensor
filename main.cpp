@@ -1,12 +1,11 @@
-#include <fstream>
 #include "linalg.hpp"
 
 using namespace algebra;
 using namespace linalg;
 
 int main() {
-    std::ofstream out("output.txt");
-    GLOBAL_FORMATTING = {true, &out};
+    GLOBAL_FORMATTING.toggle_latex("latex.tex");
+    algebra::detail::FormatSettings& out = GLOBAL_FORMATING;
     Variable x1("x1"), x2("x2"), x3("x3"), x4("x4");
 
     out << Matrix<Fraction>{{0.5, 2, 7}, {3, -1, 9}}.transpose() << std::endl;
@@ -36,8 +35,6 @@ int main() {
         out << A.augment(B).echelon_form() << std::endl;
         A.augment(B).gauss_elimination();
     }
-
-
     out << Matrix<Fraction>({{-1, 1, 2}, {3, -1, 1}, {-1, 3, 4}}).inverse() << std::endl;
     return 0;
 }
