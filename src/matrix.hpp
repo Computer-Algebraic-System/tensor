@@ -379,11 +379,12 @@ public:
 
         switch (type) {
         case Type::NORMAL:
-            res.append("\\begin{bmatrix}\n");
+            res.append("\\begin{pmatrix}\n");
             break;
 
         case Type::AUGMENTED:
-            res.append("\\left[\n\\begin{array}{").append(column - 1, 'c').append("|c}\n");
+            res.append("\\left(\n\\begin{array}{").append(column - 1, 'c').append("|c}\n");
+            break;
         }
 
         for (int i = 0; i < row; i++) {
@@ -402,11 +403,12 @@ public:
         }
         switch (type) {
         case Type::NORMAL:
-            res.append("\\end{bmatrix}\n");
+            res.append("\\end{pmatrix}\n");
             break;
 
         case Type::AUGMENTED:
-            res.append("\\end{array}\n\\right]\n");
+            res.append("\\end{array}\n\\right)\n");
+            break;
         }
         return res;
     }

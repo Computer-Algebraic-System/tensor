@@ -3,7 +3,7 @@
 #include "algebra/algebra.hpp"
 
 namespace linalg {
-    inline algebra::detail::FormatSettings& GLOBAL_FORMATTING = algebra::GLOBAL_FORMATING;
+    inline algebra::detail::FormatSettings& GLOBAL_FORMATTING = algebra::GLOBAL_FORMATTING;
 
     template <typename>
     class Matrix;

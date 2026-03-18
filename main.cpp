@@ -4,8 +4,9 @@ using namespace algebra;
 using namespace linalg;
 
 int main() {
-    GLOBAL_FORMATTING.toggle_latex("latex.tex");
-    algebra::detail::FormatSettings& out = GLOBAL_FORMATING;
+    // linalg::GLOBAL_FORMATTING.toggle_file("output.txt");
+    // linalg::GLOBAL_FORMATTING.toggle_latex("latex.tex");
+    algebra::detail::FormatSettings& out = linalg::GLOBAL_FORMATTING;
     Variable x1("x1"), x2("x2"), x3("x3"), x4("x4");
 
     out << Matrix<Fraction>{{0.5, 2, 7}, {3, -1, 9}}.transpose() << std::endl;
