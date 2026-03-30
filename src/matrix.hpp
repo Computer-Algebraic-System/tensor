@@ -234,9 +234,7 @@ public:
         std::set<algebra::Variable> variables;
 
         for (uint32_t i = 0; i < size; i++) {
-            assert(equations[i].lhs.denominator.is_fraction());
-
-            for (const algebra::Variable& variable : equations[i].lhs.numerator.terms) {
+            for (const algebra::Variable& variable : equations[i].lhs.terms) {
                 variables.insert(variable.basis());
             }
             B[i, 0] = static_cast<algebra::Fraction>(equations[i].rhs);
@@ -244,9 +242,8 @@ public:
         Matrix<algebra::Fraction> A(size, variables.size());
 
         for (uint32_t i = 0; i < size; i++) {
-            for (const algebra::Variable& variable : equations[i].lhs.numerator.terms) {
-                A[i, std::distance(variables.begin(), variables.find(variable.basis()))] =
-                    variable.coefficient / equations[i].lhs.denominator.terms.front().coefficient;
+            for (const algebra::Variable& variable : equations[i].lhs.terms) {
+                A[i, std::distance(variables.begin(), variables.find(variable.basis()))] = variable.coefficient;
             }
         }
         return {A, Matrix<algebra::Variable>(std::vector(variables.begin(), variables.end()), variables.size(), 1), B};

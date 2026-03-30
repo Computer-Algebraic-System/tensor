@@ -41,11 +41,33 @@ public:
         return res;
     }
 
-    static Vector gradient(const algebra::Polynomial& polynomial) { return {}; }
+    static Vector<algebra::RationalPolynomial> gradient(const algebra::RationalPolynomial& polynomial) {
+        return {polynomial.differentiate(algebra::Variable("x")), polynomial.differentiate(algebra::Variable("y")),
+                polynomial.differentiate(algebra::Variable("z"))};
+    }
 
-    algebra::Polynomial divergence() const { return {}; }
+    algebra::RationalPolynomial divergence() const {
+        assert(size == 3);
+        algebra::RationalPolynomial res;
 
-    Vector curl() const { return {}; }
+        if constexpr (requires(const T& obj, const algebra::Variable& variable) { obj.differentiate(variable); }) {
+            res += vec[0].differentiate(algebra::Variable("x"));
+            res += vec[1].differentiate(algebra::Variable("y"));
+            res += vec[2].differentiate(algebra::Variable("z"));
+        }
+        return res;
+    }
+
+    Vector curl() const {
+        assert(size == 3);
+
+        if constexpr (requires(const T& obj, const algebra::Variable& variable) { obj.differentiate(variable); }) {
+            return {
+
+            };
+        }
+        return {};
+    }
 
     Vector differentiate(const algebra::Variable& wrt) const {
         Vector res(size);

@@ -6,7 +6,7 @@ using namespace tensor;
 algebra::detail::FormatSettings& out = tensor::GLOBAL_FORMATTING;
 
 int main() {
-    tensor::GLOBAL_FORMATTING.toggle_file("output.txt");
+    // tensor::GLOBAL_FORMATTING.toggle_file("output.txt");
     // tensor::GLOBAL_FORMATTING.toggle_latex("latex.tex");
     Variable x("x"), y("y"), z("z"), x1("x1"), x2("x2"), x3("x3"), x4("x4"), i1("i1"), i2("i2"), i3("i3");
 

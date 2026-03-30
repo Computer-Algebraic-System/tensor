@@ -22,4 +22,4 @@ namespace tensor::detail {
 
     template <typename U>
     using unwrap_matrix_t = unwrap_matrix<U>::type;
-} // namespace linalg::detail
+} // namespace tensor::detail
