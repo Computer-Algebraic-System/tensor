@@ -2,6 +2,8 @@
 
 template <typename T = nullptr_t>
 class tensor::Matrix {
+    static constexpr auto serial_class = detail::SerialClass::MATRIX;
+
 public:
     using value_type = T;
     enum class Type { AUGMENTED, DETERMINANT, NORMAL, VECTOR } type = Type::NORMAL;
@@ -322,7 +324,7 @@ public:
     Matrix echelon_form() const {
         Matrix res = *this;
         uint32_t pivot = 0;
-        GLOBAL_FORMATTING << "Echelon Form:" << std::endl;
+        GLOBAL_FORMATTING << "Echelon Form:" << std::endl << res << std::endl;
 
         for (uint32_t cnt = 0; cnt < column && pivot < row; cnt++) {
             uint32_t pivot_row = pivot;
@@ -488,6 +490,48 @@ public:
         }
         if (type != Type::VECTOR) {
             return res.append("_{").append(std::to_string(row)).append("\\times ").append(std::to_string(column)).append("}\n");
+        }
+        return res;
+    }
+
+    void serialize(std::ofstream& out) const {
+        out.write(reinterpret_cast<const char*>(&serial_class), sizeof(serial_class));
+        out.write(reinterpret_cast<const char*>(&type), sizeof(type));
+        out.write(reinterpret_cast<const char*>(&type_param), sizeof(type_param));
+        out.write(reinterpret_cast<const char*>(&row), sizeof(row));
+        out.write(reinterpret_cast<const char*>(&column), sizeof(column));
+
+        for (const std::vector<T>& element : matrix) {
+            for (const T& value : element) {
+                if constexpr (requires(const T& obj, std::ofstream& stream) { obj.serialize(stream); }) {
+                    value.serialize(out);
+                } else {
+                    out.write(reinterpret_cast<const char*>(&value), sizeof(value));
+                }
+            }
+        }
+    }
+
+    static Matrix deserialize(std::ifstream& in) {
+        detail::SerialClass type;
+        in.read(reinterpret_cast<char*>(&type), sizeof(type));
+        assert(type == serial_class);
+
+        Matrix res;
+        in.read(reinterpret_cast<char*>(&res.type), sizeof(res.type));
+        in.read(reinterpret_cast<char*>(&res.type_param), sizeof(res.type_param));
+        in.read(reinterpret_cast<char*>(&res.row), sizeof(res.row));
+        in.read(reinterpret_cast<char*>(&res.column), sizeof(res.column));
+        res.matrix.resize(res.row, std::vector<T>(res.column));
+
+        for (std::vector<T>& element : res.matrix) {
+            for (T& value : element) {
+                if constexpr (requires(const T& obj, std::ifstream& stream) { obj.deserialize(stream); }) {
+                    value = T::deserialize(in);
+                } else {
+                    in.read(reinterpret_cast<char*>(&value), sizeof(value));
+                }
+            }
         }
         return res;
     }

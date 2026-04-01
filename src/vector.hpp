@@ -2,6 +2,8 @@
 
 template <typename T = nullptr_t>
 class tensor::Vector {
+    static constexpr auto serial_class = detail::SerialClass::VECTOR;
+
 public:
     bool transposed = false;
     uint32_t size;
@@ -94,6 +96,40 @@ public:
     }
 
     std::string to_latex() const { return Matrix<T>(vec, transposed ? 1 : size, transposed ? size : 1, Matrix<T>::Type::VECTOR).to_latex(); }
+
+    void serialize(std::ofstream& out) const {
+        out.write(reinterpret_cast<const char*>(&serial_class), sizeof(serial_class));
+        out.write(reinterpret_cast<const char*>(&transposed), sizeof(transposed));
+        out.write(reinterpret_cast<const char*>(&size), sizeof(size));
+
+        for (const T& value : vec) {
+            if constexpr (requires(const T& obj, std::ofstream& stream) { obj.serialize(stream); }) {
+                value.serialize(out);
+            } else {
+                out.write(reinterpret_cast<const char*>(&value), sizeof(value));
+            }
+        }
+    }
+
+    static Vector deserialize(std::ifstream& in) {
+        detail::SerialClass type;
+        in.read(reinterpret_cast<char*>(&type), sizeof(type));
+        assert(type == serial_class);
+
+        Vector res;
+        in.read(reinterpret_cast<char*>(&res.transposed), sizeof(res.transposed));
+        in.read(reinterpret_cast<char*>(&res.size), sizeof(res.size));
+        res.vec.resize(res.size);
+
+        for (T& value : res.vec) {
+            if constexpr (requires(const T& obj, std::ifstream& stream) { obj.deserialize(stream); }) {
+                value = T::deserialize(in);
+            } else {
+                in.read(reinterpret_cast<char*>(&value), sizeof(value));
+            }
+        }
+        return res;
+    }
 };
 
 namespace std {

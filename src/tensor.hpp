@@ -22,6 +22,5 @@ inline std::map<algebra::Variable, algebra::Fraction> tensor::solve_linear_syste
         res.emplace(X[i, 0], values[i]);
         GLOBAL_FORMATTING << algebra::Equation(X[i, 0], values[i]) << std::endl;
     }
-    GLOBAL_FORMATTING << std::endl;
     return res;
 }
