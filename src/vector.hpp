@@ -15,9 +15,26 @@ public:
 
     Vector(std::initializer_list<T> list) : size(list.size()), vec(list.begin(), list.end()) {}
 
+    template <typename U, typename t = decltype(std::declval<T>() * std::declval<U>()), typename R = decltype(std::declval<t>() + std::declval<t>())>
+    R operator*(const Vector<U> other) {
+        assert((transposed || other.transposed) && size == other.size);
+        R res;
+
+        for (uint32_t i = 0; i < size; i++) {
+            res += vec[i] * other[i];
+        }
+        return res;
+    }
+
     T& operator[](const uint32_t i) { return vec[i]; }
 
     const T& operator[](const uint32_t i) const { return vec[i]; }
+
+    Vector transpose() const {
+        Vector res = *this;
+        res.transposed ^= true;
+        return res;
+    }
 
     template <typename U, typename t = decltype(std::declval<T>() * std::declval<U>()), typename R = decltype(std::declval<t>() + std::declval<t>())>
     R dot(const Vector<U>& value) const {
@@ -31,65 +48,102 @@ public:
     }
 
     template <typename U>
-    static Vector<U> differentiate(const U& scalar, const Vector<algebra::Variable>& wrt) {
+    static Vector<U> differentiate(const U& scalar, const Vector<algebra::Variable>& wrt, const bool origin = true) {
         Vector<U> res(wrt.size);
 
         if constexpr (requires(const U& obj, const algebra::Variable& variable) { obj.differentiate(variable); }) {
             for (uint32_t i = 0; i < wrt.size; i++) {
-                res[i] = scalar.differentiate(wrt[i]);
+                res[i] = scalar.differentiate(wrt[i], false);
             }
         }
         res.transposed = true;
-        return res;
-    }
 
-    static Vector<algebra::RationalPolynomial> gradient(const algebra::RationalPolynomial& polynomial) {
-        return {polynomial.differentiate(algebra::Variable("x")), polynomial.differentiate(algebra::Variable("y")),
-                polynomial.differentiate(algebra::Variable("z"))};
-    }
-
-    algebra::RationalPolynomial divergence() const {
-        assert(size == 3);
-        algebra::RationalPolynomial res;
-
-        if constexpr (requires(const T& obj, const algebra::Variable& variable) { obj.differentiate(variable); }) {
-            res += vec[0].differentiate(algebra::Variable("x"));
-            res += vec[1].differentiate(algebra::Variable("y"));
-            res += vec[2].differentiate(algebra::Variable("z"));
+        if (origin && GLOBAL_FORMATTING.verbose) {
+            algebra::detail::print_differentiate(scalar, wrt, res);
         }
         return res;
     }
 
-    Vector curl() const {
-        assert(size == 3);
+    static Vector<algebra::RationalPolynomial> gradient(const algebra::RationalPolynomial& polynomial, const bool origin = true) {
+        Vector<algebra::RationalPolynomial> res({polynomial.differentiate(algebra::Variable("x"), false),
+                                                 polynomial.differentiate(algebra::Variable("y"), false),
+                                                 polynomial.differentiate(algebra::Variable("z"), false)});
 
-        if constexpr (requires(const T& obj, const algebra::Variable& variable) { obj.differentiate(variable); }) {
-            return {
-
-            };
-        }
-        return {};
-    }
-
-    Vector differentiate(const algebra::Variable& wrt) const {
-        Vector res(size);
-
-        if constexpr (requires(const T& obj, const algebra::Variable& variable) { obj.differentiate(variable); }) {
-            for (uint32_t i = 0; i < size; i++) {
-                res[i] = vec[i].differentiate(wrt);
+        if (origin && GLOBAL_FORMATTING.verbose) {
+            if (GLOBAL_FORMATTING.output == algebra::detail::FormatSettings::Output::LATEX) {
+                GLOBAL_FORMATTING << algebra::detail::LaTeX(
+                    std::string("\\nabla\\left(").append(polynomial.to_latex()).append("\\right)=").append(res.to_latex()));
+            } else {
+                GLOBAL_FORMATTING << "grad(" << polynomial << ") = " << res;
             }
         }
         return res;
     }
 
-    Matrix<T> differentiate(const Vector<algebra::Variable>& wrt) const {
+    algebra::RationalPolynomial divergence(const bool origin = true) const {
+        assert(size == 3);
+        algebra::RationalPolynomial res;
+
+        if constexpr (requires(const T& obj, const algebra::Variable& variable, const bool origin) { obj.differentiate(variable, origin); }) {
+            res += vec[0].differentiate(algebra::Variable("x"), false);
+            res += vec[1].differentiate(algebra::Variable("y"), false);
+            res += vec[2].differentiate(algebra::Variable("z"), false);
+        }
+        if (origin && GLOBAL_FORMATTING.verbose) {
+            if (GLOBAL_FORMATTING.output == algebra::detail::FormatSettings::Output::LATEX) {
+                GLOBAL_FORMATTING << algebra::detail::LaTeX(std::string("\\nabla\\cdot").append(to_latex()).append("=").append(res.to_latex()));
+            } else {
+                GLOBAL_FORMATTING << "div(" << *this << ") = " << res;
+            }
+        }
+        return res;
+    }
+
+    Vector curl(const bool origin = true) const {
+        assert(size == 3);
+        algebra::Variable x("x"), y("y"), z("z");
+        Vector res(3);
+
+        if constexpr (requires(const T& obj, const algebra::Variable& variable, const bool origin) { obj.differentiate(variable, origin); }) {
+            res[0] = vec[2].differentiate(y, false) - vec[1].differentiate(z, false);
+            res[1] = vec[0].differentiate(z, false) - vec[2].differentiate(x, false);
+            res[2] = vec[1].differentiate(x, false) - vec[0].differentiate(y, false);
+        }
+        if (origin && GLOBAL_FORMATTING.verbose) {
+            if (GLOBAL_FORMATTING.output == algebra::detail::FormatSettings::Output::LATEX) {
+                GLOBAL_FORMATTING << algebra::detail::LaTeX(std::string("\\nabla\\times").append(to_latex()).append("=").append(res.to_latex()));
+            } else {
+                GLOBAL_FORMATTING << "curl(" << *this << ") = " << res;
+            }
+        }
+        return res;
+    }
+
+    Vector differentiate(const algebra::Variable& wrt, const bool origin = true) const {
+        Vector res(size);
+
+        if constexpr (requires(const T& obj, const algebra::Variable& variable, const bool origin) { obj.differentiate(variable, origin); }) {
+            for (uint32_t i = 0; i < size; i++) {
+                res[i] = vec[i].differentiate(wrt, false);
+            }
+        }
+        if (origin && GLOBAL_FORMATTING.verbose) {
+            algebra::detail::print_differentiate(*this, wrt, res);
+        }
+        return res;
+    }
+
+    Matrix<T> differentiate(const Vector<algebra::Variable>& wrt, const bool origin = true) const {
         Matrix<T> res(size, wrt.size);
 
         if constexpr (requires(const T& obj, const algebra::Variable& variable) { obj.differentiate(variable); }) {
             for (uint32_t i = 0; i < size; i++) {
                 for (uint32_t j = 0; j < wrt.size; j++) {
-                    res[i, j] = vec[i].differentiate(wrt[j]);
+                    res[i, j] = vec[i].differentiate(wrt[j], false);
                 }
+            }
+            if (origin && GLOBAL_FORMATTING.verbose) {
+                algebra::detail::print_differentiate(*this, wrt, res);
             }
         }
         return res;

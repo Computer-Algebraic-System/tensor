@@ -1,7 +1,7 @@
 #pragma once
 
 inline std::map<algebra::Variable, algebra::Fraction> tensor::solve_linear_system(const std::vector<algebra::Equation>& equations,
-                                                                                  const std::string& method) {
+                                                                                  const Method method) {
     std::map<algebra::Variable, algebra::Fraction> res;
     std::vector<algebra::Fraction> values;
 
@@ -10,11 +10,14 @@ inline std::map<algebra::Variable, algebra::Fraction> tensor::solve_linear_syste
     }
     const auto [A, X, B] = Matrix<algebra::Variable>::from_equations(equations);
 
-    if (method == "gauss") {
-        const Matrix<algebra::Fraction> coefficients = A.augment(B);
-        values = coefficients.gauss_elimination();
-    } else if (method == "cramer") {
+    switch (method) {
+    case Method::GAUSS:
+        values = A.augment(B).gauss_elimination();
+        break;
+
+    case Method::CRAMER:
         values = A.cramer_rule(B);
+        break;
     }
     const int size = values.size();
 

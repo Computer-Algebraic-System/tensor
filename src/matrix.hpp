@@ -252,28 +252,34 @@ public:
     }
 
     template <typename U>
-    static Matrix<U> differentiate(const U& scalar, const Matrix<algebra::Variable>& wrt) {
+    static Matrix<U> differentiate(const U& scalar, const Matrix<algebra::Variable>& wrt, const bool origin = true) {
         Matrix<U> res(wrt.row, wrt.column);
 
         if constexpr (requires(const T& obj, const algebra::Variable& variable) { obj.differentiate(variable); }) {
             for (uint32_t i = 0; i < wrt.row; i++) {
                 for (uint32_t j = 0; j < wrt.column; j++) {
-                    res[i, j] = scalar.differentiate(wrt[i, j]);
+                    res[i, j] = scalar.differentiate(wrt[i, j], false);
                 }
             }
+        }
+        if (origin && GLOBAL_FORMATTING.verbose) {
+            algebra::detail::print_differentiate(scalar, wrt, res);
         }
         return res;
     }
 
-    Matrix differentiate(const algebra::Variable& wrt) const {
+    Matrix differentiate(const algebra::Variable& wrt, const bool origin = true) const {
         Matrix res(row, column);
 
-        if constexpr (requires(const T& obj, const algebra::Variable& variable) { obj.differentiate(variable); }) {
+        if constexpr (requires(const T& obj, const algebra::Variable& variable, const bool origin) { obj.differentiate(variable, origin); }) {
             for (uint32_t i = 0; i < row; i++) {
                 for (uint32_t j = 0; j < column; j++) {
-                    res[i, j] = matrix[i][j].differentiate(wrt);
+                    res[i, j] = matrix[i][j].differentiate(wrt, false);
                 }
             }
+        }
+        if (origin && GLOBAL_FORMATTING.verbose) {
+            algebra::detail::print_differentiate(*this, wrt, res);
         }
         return res;
     }
@@ -317,15 +323,18 @@ public:
         for (uint32_t i = 0; i < row; i++) {
             res *= mat[i, i];
         }
-        return res;
+        return mat.type_param % 2 == 0 ? res : -res;
     }
 
 
     Matrix echelon_form() const {
         Matrix res = *this;
         uint32_t pivot = 0;
-        GLOBAL_FORMATTING << "Echelon Form:" << std::endl << res << std::endl;
+        GLOBAL_FORMATTING << "Echelon Form:" << std::endl << res;
 
+        if (res.type == Type::DETERMINANT) {
+            res.type_param = 0;
+        }
         for (uint32_t cnt = 0; cnt < column && pivot < row; cnt++) {
             uint32_t pivot_row = pivot;
 
@@ -339,6 +348,9 @@ public:
                 for (uint32_t j = 0; j < column; j++) {
                     std::swap(res[pivot_row, j], res[pivot, j]);
                 }
+                if (res.type == Type::DETERMINANT) {
+                    ++res.type_param;
+                }
             }
             for (uint32_t i = pivot + 1; i < row; i++) {
                 T factor = res[i, cnt] / res[pivot, cnt];
@@ -348,7 +360,7 @@ public:
                 }
             }
             pivot++;
-            GLOBAL_FORMATTING << res << std::endl;
+            GLOBAL_FORMATTING << res;
         }
         return res;
     }
@@ -537,6 +549,37 @@ public:
     }
 };
 
+template <typename T, typename U, typename R = decltype(std::declval<U>() + std::declval<T>())>
+    requires(!tensor::detail::is_matrix_v<T>)
+tensor::Matrix<R> operator+(const T& value, const tensor::Matrix<U>& matrix) {
+    return matrix + value;
+}
+
+template <typename T, typename U, typename R = decltype(-std::declval<U>() + std::declval<T>())>
+    requires(!tensor::detail::is_matrix_v<T>)
+tensor::Matrix<R> operator-(const T& value, const tensor::Matrix<U>& matrix) {
+    return -matrix + value;
+}
+
+template <typename T, typename U, typename R = decltype(std::declval<U>() * std::declval<T>())>
+    requires(!tensor::detail::is_matrix_v<T>)
+tensor::Matrix<R> operator*(const T& value, const tensor::Matrix<U>& matrix) {
+    return matrix * value;
+}
+
+template <typename T, typename U, typename R = decltype(std::declval<T>() / std::declval<U>())>
+    requires(!tensor::detail::is_matrix_v<T>)
+tensor::Matrix<R> operator/(const T& value, const tensor::Matrix<U>& matrix) {
+    tensor::Matrix<R> res(matrix.row, matrix.column);
+
+    for (uint32_t i = 0; i < matrix.row; i++) {
+        for (uint32_t j = 0; j < matrix.column; j++) {
+            res[i, j] = value / matrix[i, j];
+        }
+    }
+    return res;
+}
+
 namespace std {
     template <typename T>
     std::string to_string(const tensor::Matrix<T>& matrix) {
@@ -558,12 +601,12 @@ namespace std {
             middle[separation * padding + (separation - 1)] = '|';
         }
         const uint32_t left = padding / 2, right = padding - left;
-        std::string res, border("+"), empty_space("|");
+        std::string res("\n"), border("+"), empty_space("|");
         border.append(left, '-').append(total_width - left - right, ' ').append(right, '-').push_back('+');
         empty_space.append(middle).push_back('|');
 
         if (matrix.type != tensor::Matrix<T>::Type::DETERMINANT) {
-            res = border;
+            res.append(border);
         }
         for (uint32_t i = 0; i < format.row; i++) {
             res.append("\n|");
@@ -601,35 +644,4 @@ namespace std {
 template <typename T>
 std::ostream& tensor::operator<<(std::ostream& out, const Matrix<T>& matrix) {
     return out << std::to_string(matrix);
-}
-
-template <typename T, typename U, typename R = decltype(std::declval<U>() + std::declval<T>())>
-    requires(!tensor::detail::is_matrix_v<T>)
-tensor::Matrix<R> operator+(const T& value, const tensor::Matrix<U>& matrix) {
-    return matrix + value;
-}
-
-template <typename T, typename U, typename R = decltype(-std::declval<U>() + std::declval<T>())>
-    requires(!tensor::detail::is_matrix_v<T>)
-tensor::Matrix<R> operator-(const T& value, const tensor::Matrix<U>& matrix) {
-    return -matrix + value;
-}
-
-template <typename T, typename U, typename R = decltype(std::declval<U>() * std::declval<T>())>
-    requires(!tensor::detail::is_matrix_v<T>)
-tensor::Matrix<R> operator*(const T& value, const tensor::Matrix<U>& matrix) {
-    return matrix * value;
-}
-
-template <typename T, typename U, typename R = decltype(std::declval<T>() / std::declval<U>())>
-    requires(!tensor::detail::is_matrix_v<T>)
-tensor::Matrix<R> operator/(const T& value, const tensor::Matrix<U>& matrix) {
-    tensor::Matrix<R> res(matrix.row, matrix.column);
-
-    for (uint32_t i = 0; i < matrix.row; i++) {
-        for (uint32_t j = 0; j < matrix.column; j++) {
-            res[i, j] = value / matrix[i, j];
-        }
-    }
-    return res;
 }

@@ -10,11 +10,11 @@ int main() {
     // tensor::GLOBAL_FORMATTING.toggle_latex("latex.tex");
     Variable x("x"), y("y"), z("z"), x1("x1"), x2("x2"), x3("x3"), x4("x4"), i1("i1"), i2("i2"), i3("i3");
 
-    out << Matrix<Fraction>{{0.5, 2, 7}, {3, -1, 9}}.transpose() << std::endl;
-    out << 2 * Matrix<Fraction>{{1, -5}, {3, 7}} << std::endl;
-    out << Matrix<Fraction>{{2, 3}, {-1, 7}} + Matrix<Fraction>{{7, -8}, {2, 0}} << std::endl;
-    out << Matrix<Fraction>{{1, 2}, {3, 4}, {5, 6}} * Matrix<Fraction>{{2, 5}, {6, 8}} << std::endl;
-    out << Matrix<Fraction>{{1, 1}, {2, 2}} * Matrix<Fraction>{{-1, 1}, {1, -1}} << std::endl;
+    out << Matrix<Fraction>{{0.5, 2, 7}, {3, -1, 9}}.transpose();
+    out << 2 * Matrix<Fraction>{{1, -5}, {3, 7}};
+    out << Matrix<Fraction>{{2, 3}, {-1, 7}} + Matrix<Fraction>{{7, -8}, {2, 0}};
+    out << Matrix<Fraction>{{1, 2}, {3, 4}, {5, 6}} * Matrix<Fraction>{{2, 5}, {6, 8}};
+    out << Matrix<Fraction>{{1, 1}, {2, 2}} * Matrix<Fraction>{{-1, 1}, {1, -1}};
 
     solve_linear_system({
         -x1 + x2 + 2 * x3 == 2,
@@ -43,8 +43,19 @@ int main() {
             2 * x + 9 * z == -5,
             -4 * x + y - 26 * z == 2,
         },
-        "cramer");
-    out << Matrix<Fraction>({{-1, 1, 2}, {3, -1, 1}, {-1, 3, 4}}).inverse() << std::endl;
-    out << Matrix<Fraction>({{2, 0, -1}, {5, 1, 0}, {0, 1, 3}}).inverse() << std::endl;
+        Method::CRAMER);
+    out << Matrix<Fraction>({{-1, 1, 2}, {3, -1, 1}, {-1, 3, 4}}).inverse();
+    out << Matrix<Fraction>({{2, 0, -1}, {5, 1, 0}, {0, 1, 3}}).inverse();
+
+    out << Vector<>::gradient((x ^ 2) + 3 * (y ^ 2) - 5 * (z ^ 2)) << std::endl;
+    out << Vector<SimplePolynomial>{x * y, (y ^ 2) + (z ^ 2), -5 * x * y * z}.divergence() << std::endl;
+    out << Vector<SimplePolynomial>{x * y * z, 2 * x * y, (x ^ 2) + (y ^ 2)}.curl() << std::endl;
+    out << Vector<Fraction>{1, 2, 3}.differentiate(x);
+    out << Vector<>::differentiate(Fraction(5), {x, y, z});
+    out << Matrix<>::differentiate(Fraction(5), {{x, y, z}, {x1, x2, x3}, {i1, i2, i3}});
+    out << Vector<Fraction>{1, 2, 3}.differentiate({x, y, z, x1, x2, x3, i1, i2, i3});
+    out << Vector{x, y, z, x1, x2, x3, i1, i2, i3}.differentiate({x, y, z, x1, x2, x3, i1, i2, i3});
+    out << Vector<>::differentiate(Vector{1, 2, 3}.transpose() * Vector{x, y, z}, {x, y, z});
+    out << (Matrix{{1, 2, 3}, {3, 4, 6}} * Vector{x, y, z}).differentiate({x, y, z});
     return 0;
 }
