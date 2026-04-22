@@ -506,6 +506,62 @@ public:
         return res;
     }
 
+    std::string to_html() const {
+        std::string res;
+
+        switch (type) {
+        case Type::DETERMINANT:
+            res.append("<msub><mrow><mo fence='true' stretchy='true'>|</mo><mtable>");
+            break;
+
+        case Type::NORMAL:
+        case Type::AUGMENTED:
+            res.append("<msub><mrow>");
+
+        case Type::VECTOR:
+            res.append("<mo fence='true' stretchy='true'>(</mo><mtable>");
+            break;
+        }
+
+        for (uint32_t i = 0; i < row; i++) {
+            res.append("<mtr>");
+
+            for (uint32_t j = 0; j < column; j++) {
+                if (type == Type::AUGMENTED && j == column - type_param - 1) {
+                    res.append("<mtd style='border-right: 1px solid black; padding-right: 10px;'>");
+                } else {
+                    res.append("<mtd>");
+                }
+                if constexpr (requires(const T& obj) { obj.to_html(); }) {
+                    res.append(matrix[i][j].to_html());
+                } else {
+                    res.append(std::to_string(matrix[i][j]));
+                }
+                res.append("</mtd>");
+            }
+            res.append("</mtr>");
+        }
+        switch (type) {
+        case Type::DETERMINANT:
+            res.append("</mtable><mo fence='true' stretchy='true'>|</mo>");
+            break;
+
+        case Type::AUGMENTED:
+        case Type::VECTOR:
+        case Type::NORMAL:
+            res.append("</mtable><mo fence='true' stretchy='true'>)</mo>");
+            break;
+        }
+        if (type != Type::VECTOR) {
+            return res.append("</mrow><mrow><mn>")
+                .append(std::to_string(row))
+                .append("</mn><mo>&times;</mo><mn>")
+                .append(std::to_string(column))
+                .append("</mn></mrow></msub>");
+        }
+        return res;
+    }
+
     void serialize(std::ofstream& out) const {
         out.write(reinterpret_cast<const char*>(&serial_class), sizeof(serial_class));
         out.write(reinterpret_cast<const char*>(&type), sizeof(type));

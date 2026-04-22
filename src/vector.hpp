@@ -70,10 +70,21 @@ public:
                                                  polynomial.differentiate(algebra::Variable("z"), false)});
 
         if (origin && GLOBAL_FORMATTING.verbose) {
-            if (GLOBAL_FORMATTING.output == algebra::detail::FormatSettings::Output::LATEX) {
+            switch (GLOBAL_FORMATTING.output) {
+            case algebra::detail::FormatSettings::Output::LATEX:
                 GLOBAL_FORMATTING << algebra::detail::LaTeX(
                     std::string("\\nabla\\left(").append(polynomial.to_latex()).append("\\right)=").append(res.to_latex()));
-            } else {
+                break;
+
+            case algebra::detail::FormatSettings::Output::HTML:
+                GLOBAL_FORMATTING << algebra::detail::HTML(std::string("<mo>&nabla;</mo><mrow><mo fence='true' stretchy='true'>(</mo>")
+                                                               .append(polynomial.to_html())
+                                                               .append("<mo fence='true' stretchy='true'>)</mo></mrow><mo>=</mo>")
+                                                               .append(res.to_html()));
+                break;
+
+            case algebra::detail::FormatSettings::Output::FILE:
+            case algebra::detail::FormatSettings::Output::CONSOLE:
                 GLOBAL_FORMATTING << "grad(" << polynomial << ") = " << res;
             }
         }
@@ -90,9 +101,18 @@ public:
             res += vec[2].differentiate(algebra::Variable("z"), false);
         }
         if (origin && GLOBAL_FORMATTING.verbose) {
-            if (GLOBAL_FORMATTING.output == algebra::detail::FormatSettings::Output::LATEX) {
+            switch (GLOBAL_FORMATTING.output) {
+            case algebra::detail::FormatSettings::Output::LATEX:
                 GLOBAL_FORMATTING << algebra::detail::LaTeX(std::string("\\nabla\\cdot").append(to_latex()).append("=").append(res.to_latex()));
-            } else {
+                break;
+
+            case algebra::detail::FormatSettings::Output::HTML:
+                GLOBAL_FORMATTING << algebra::detail::HTML(
+                    std::string("<mo>&nabla;</mo><mo>&sdot;</mo>").append(to_html()).append("<mo>=</mo>").append(res.to_html()));
+                break;
+
+            case algebra::detail::FormatSettings::Output::FILE:
+            case algebra::detail::FormatSettings::Output::CONSOLE:
                 GLOBAL_FORMATTING << "div(" << *this << ") = " << res;
             }
         }
@@ -110,10 +130,20 @@ public:
             res[2] = vec[1].differentiate(x, false) - vec[0].differentiate(y, false);
         }
         if (origin && GLOBAL_FORMATTING.verbose) {
-            if (GLOBAL_FORMATTING.output == algebra::detail::FormatSettings::Output::LATEX) {
+            switch (GLOBAL_FORMATTING.output) {
+            case algebra::detail::FormatSettings::Output::LATEX:
                 GLOBAL_FORMATTING << algebra::detail::LaTeX(std::string("\\nabla\\times").append(to_latex()).append("=").append(res.to_latex()));
-            } else {
+                break;
+
+            case algebra::detail::FormatSettings::Output::HTML:
+                GLOBAL_FORMATTING << algebra::detail::HTML(
+                    std::string("<mo>&nabla;</mo><mo>&times;</mo>").append(to_html()).append("<mo>=</mo>").append(res.to_html()));
+                break;
+
+            case algebra::detail::FormatSettings::Output::FILE:
+            case algebra::detail::FormatSettings::Output::CONSOLE:
                 GLOBAL_FORMATTING << "curl(" << *this << ") = " << res;
+                break;
             }
         }
         return res;
@@ -150,6 +180,8 @@ public:
     }
 
     std::string to_latex() const { return Matrix<T>(vec, transposed ? 1 : size, transposed ? size : 1, Matrix<T>::Type::VECTOR).to_latex(); }
+
+    std::string to_html() const { return Matrix<T>(vec, transposed ? 1 : size, transposed ? size : 1, Matrix<T>::Type::VECTOR).to_html(); }
 
     void serialize(std::ofstream& out) const {
         out.write(reinterpret_cast<const char*>(&serial_class), sizeof(serial_class));
